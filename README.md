@@ -1,4 +1,3 @@
-
 # 📚 Documentação do Schema Prisma – Serviço `userManagement`
 
 ## 🧩 Visão Geral
@@ -10,6 +9,68 @@ Este schema define os modelos de dados para o serviço de **gestão de usuários
 - Sistema de amizades (com múltiplos estados)
 - Suporte a autenticação com senha e 2FA
 - Enums para status do usuário e gênero
+
+---
+
+## � Como Inicializar e Rodar o Projeto
+
+1. **Clone o repositório e instale as dependências:**
+   ```bash
+   git clone <repo-url>
+   cd User-Management
+   npm install
+   ```
+
+2. **Configure o banco de dados:**
+   - Crie um arquivo `.env` na raiz do projeto com:
+     ```env
+     DATABASE_URL="file:./dev.db"
+     ```
+
+3. **Rode as migrations e gere o client Prisma:**
+   ```bash
+   npx prisma migrate dev --name init_user_management
+   npx prisma generate
+   ```
+
+4. **Inicie o servidor:**
+   ```bash
+   npm run build   # se houver build step
+   npm start
+   # ou diretamente:
+   npx ts-node src/server.ts
+   ```
+
+5. **Acesse a API em:**  
+   `http://localhost:3000/`
+
+---
+
+## �️ Funcionalidades da API
+
+### Usuários (`/api/users`)
+
+- **Criar usuário:** `POST /api/users`
+- **Listar todos usuários:** `GET /api/users`
+- **Buscar usuário por username:** `GET /api/users/:username`
+- **Atualizar usuário:** `PUT /api/users/:username`
+- **Desativar usuário:** `PATCH /api/users/:username`
+- **Deletar usuário:** `DELETE /api/users/:username`
+
+### Perfis (`/api/profiles`)
+
+- **Criar perfil:** `POST /api/profiles`
+- **Buscar perfil por username:** `GET /api/profiles/:username`
+- **Atualizar perfil:** `PUT /api/profiles/:username`
+- **Deletar perfil:** `DELETE /api/profiles/:username`
+
+### Amizades (`/api/friendships`)
+
+- **Enviar solicitação de amizade:** `POST /api/friendships/request`
+- **Listar solicitações recebidas:** `GET /api/friendships/requests/:userId`
+- **Responder solicitação (aceitar/recusar):** `POST /api/friendships/respond/:friendshipId`
+- **Listar amigos:** `GET /api/friendships/list/:userId`
+- **Remover amigo:** `POST /api/friendships/remove`
 
 ---
 
@@ -32,8 +93,6 @@ User ────< SentRequests:Friendship >──── User
 
 ### `User`
 
-Representa a **entidade principal do sistema**. Responsável por autenticação, identificação e controle de acesso.
-
 | Campo             | Tipo      | Descrição |
 |------------------|-----------|-----------|
 | `id`             | `String`  | UUID único do usuário |
@@ -51,8 +110,6 @@ Representa a **entidade principal do sistema**. Responsável por autenticação,
 
 ### `Profile`
 
-Contém **informações públicas e estéticas** de um usuário. Mantido separado para manter a responsabilidade do modelo `User` clara e focada.
-
 | Campo       | Tipo         | Descrição |
 |-------------|--------------|-----------|
 | `id`        | `String`     | UUID do perfil |
@@ -68,8 +125,6 @@ Contém **informações públicas e estéticas** de um usuário. Mantido separad
 
 ### `Friendship`
 
-Representa **relações sociais** entre usuários. Cada relação possui um `status`, e o par `(requesterId, addresseeId)` é único para evitar duplicações.
-
 | Campo        | Tipo                | Descrição |
 |--------------|---------------------|-----------|
 | `id`         | `String`            | UUID da relação |
@@ -83,30 +138,17 @@ Representa **relações sociais** entre usuários. Cada relação possui um `sta
 ## 🧾 Enums
 
 ### `FriendshipStatus`
-
-Estado atual da relação entre dois usuários.
-
 - `PENDING`: Solicitação pendente
 - `ACCEPTED`: Usuários são amigos
 - `BLOCKED`: Um dos usuários bloqueou o outro
 - `DECLINED`: Solicitação recusada
 
----
-
 ### `UserStatus`
-
-Usado para indicar o status atual de conexão do usuário. Pode ser utilizado em interfaces ou matchmaking.
-
 - `ONLINE`
 - `OFFLINE`
 - `IN_GAME`
 
----
-
 ### `UserGender`
-
-Opcional, para representar gênero no perfil.
-
 - `MALE`
 - `FEMALE`
 - `OTHER`
@@ -123,38 +165,9 @@ Opcional, para representar gênero no perfil.
 
 ---
 
-## ✅ Migração e Execução
-
-Para gerar a migration inicial:
-
-```bash
-npx prisma migrate dev --name init_user_management
-```
-
-Para aplicar em produção (depois):
-
-```bash
-npx prisma migrate deploy
-```
-
-Para gerar o client Prisma:
-
-```bash
-npx prisma generate
-```
-
----
-
 ## 🧪 Extras (para testar localmente)
 
-Crie um arquivo `.env` com:
-
-```env
-DATABASE_URL="file:./dev.db"
-```
-
-E use `npx prisma studio` para abrir a interface web de visualização do banco:
-
-```bash
-npx prisma studio
-```
+- Use `npx prisma studio` para abrir a interface web de visualização do banco:
+  ```bash
+  npx prisma studio
+  ```
