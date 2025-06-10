@@ -10,6 +10,8 @@ COPY . .
 ENV DOTENV_CONFIG_PATH=prisma/.env
 
 RUN npx prisma generate
+RUN apt-get update -y && apt-get install -y openssl
+RUN npx prisma migrate dev
 RUN npm run build
 
 EXPOSE 3000
