@@ -28,6 +28,24 @@ export const createUser = async (req: FastifyRequest, res: FastifyReply) => {
 	}
 };
 
+export const login = async (req: FastifyRequest, res: FastifyReply) => {
+	try {
+		const { username, password } = req.body as { username: string, password: string };
+		if (!username || !password)
+			return res.code(400).send({ message: "Bad request." });
+		const user = await prisma.user.findFirst({ where: { username } });
+		if (!user)
+			return res.code(403).send({ message: "Invalid username or password." });
+
+		const valid = await bcrypt.compare(password, user.password);
+		if (!valid)
+			return res.code(403).send({ message: "Invalid username or password." });
+		return res.code(200).send({ message: "User successfully logged in.", user });
+	} catch (err) {
+		return res.code(500).send({ message: "Internal server error." });
+	}
+}
+
 // ================================== GET ==================================
 exports.getAll = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
@@ -103,7 +121,7 @@ export const updateUser = async (req: FastifyRequest, res: FastifyReply) => {
 
 		return res.send({ message: 'User updated', user });
 
-	} catch (err : unknown) {
+	} catch (err: unknown) {
 		if (err instanceof PrismaClientKnownRequestError && err.code == 'P2025') {
 			return res.code(404).send({ message: 'User not found' });
 		}

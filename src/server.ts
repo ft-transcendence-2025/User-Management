@@ -1,17 +1,42 @@
 import Fastify from "fastify";
 import { PrismaClient } from "../generated/prisma";
 const prisma = new PrismaClient();
+
+
+const envToLogger = {
+	development: {
+		transport: {
+			target: 'pino-pretty',
+			options: {
+				translateTime: 'HH:MM:ss Z',
+				ignore: 'pid,hostname',
+			},
+		},
+	},
+	production: true,
+	test: false
+};
+
+type Environment = 'development' | 'production' | 'test';
+const environment = (process.env.NODE_ENV as Environment) || 'development';
+
+
+
 const fastify = Fastify({
-	logger: true
+	logger: envToLogger[environment] ?? true
 })
+
+
+import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import friendshipRoutes from "./routes/friendshipRoutes";
 import profileRoutes from "./routes/profileRoutes";
 
 [
-	{ route: userRoutes, prefix: 'api/users' },
-	{ route: profileRoutes, prefix: 'api/profiles' },
-	{ route: friendshipRoutes, prefix: 'api/friendships' }
+	{ route: authRoutes, prefix: '/auth' },
+	{ route: userRoutes, prefix: '/users' },
+	{ route: profileRoutes, prefix: '/profiles' },
+	{ route: friendshipRoutes, prefix: '/friendships' }
 ].forEach(({ route, prefix }) => fastify.register(route, { prefix }));
 
 async function main() {
