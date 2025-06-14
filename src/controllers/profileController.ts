@@ -7,8 +7,8 @@ const prisma = new PrismaClient();
 
 export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
+		const { username } = req.params as { username: string };
 		const {
-			userUsername,
 			nickName,
 			bio,
 			gender,
@@ -17,7 +17,6 @@ export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 			language,
 			avatar
 		} = req.body as {
-			userUsername: string;
 			nickName?: string;
 			bio?: string;
 			gender?: UserGender;
@@ -26,28 +25,27 @@ export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 			language?: ProfileLanguage;
 			avatar?: string;
 		};
-		console.log('Creating profile for user:', userUsername, "body : ", req.body);
 
-		if (!userUsername) {
-			return res.code(400).send({ message: 'userUsername is required.' });
+		if (!username) {
+			return res.code(400).send({ message: 'username is required.' });
 		}
 
 
 		const user = await prisma.user.findUnique({
-			where: { username: userUsername }
+			where: { username: username }
 		});
 		if (!user) {
 			return res.code(404).send({ message: 'User does not exist.' });
 		}
 
 		const existing = await prisma.profile.findUnique({
-			where: { userUsername }
+			where: { userUsername: username }
 		});
 		if (existing) return res.code(400).send({ message: 'Profile already exists.' });
 
 		const profile = await prisma.profile.create({
 			data: {
-				userUsername,
+				userUsername : username,
 				...(nickName && { nickName }),
 				...(bio && { bio }),
 				...(gender && { gender }),
