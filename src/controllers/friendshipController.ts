@@ -36,11 +36,11 @@ exports.sendFriendRequest = async (req: FastifyRequest, res: FastifyReply) => {
 
 exports.getFriendRequests = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
-		const { userId } = req.params as { userId: string };
+		const { username } = req.params as { username: string };
 
 		const requests = await prisma.friendship.findMany({
 			where: {
-				addresseeUsername: userId,
+				addresseeUsername: username,
 				status: 'PENDING'
 			},
 			include: {
@@ -79,13 +79,13 @@ exports.respondToFriendRequest = async (req: FastifyRequest, res: FastifyReply) 
 
 exports.listFriends = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
-		const { userId } = req.params as { userId: string };
+		const { username } = req.params as { username: string };
 
 		const friends = await prisma.friendship.findMany({
 			where: {
 				OR: [
-					{ requesterUsername: userId },
-					{ addresseeUsername: userId }
+					{ requesterUsername: username },
+					{ addresseeUsername: username }
 				],
 				status: 'ACCEPTED'
 			},
@@ -96,7 +96,7 @@ exports.listFriends = async (req: FastifyRequest, res: FastifyReply) => {
 		});
 
 		const result = friends.map((f) => {
-			const friendUser = f.requesterUsername == userId ? f.addressee : f.requester;
+			const friendUser = f.requesterUsername == username ? f.addressee : f.requester;
 			return { id: friendUser.id, username: friendUser.username };
 		});
 
