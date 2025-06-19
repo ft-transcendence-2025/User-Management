@@ -1,9 +1,56 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { FriendshipStatus, PrismaClient, Profile, ProfileLanguage, UserGender } from '../../generated/prisma';
 import { PrismaClientKnownRequestError } from '../../generated/prisma/runtime/library';
+import { fileTypeFromBuffer } from 'file-type';
 
 const prisma = new PrismaClient();
 
+
+export const getAvatar = async (req: FastifyRequest, res: FastifyReply) => {
+	try {
+		const { username } = req.params as { username: string };
+		if (!username) {
+			return res.code(400).send({ message: 'Username is required.' });
+		}
+
+		const profile = await prisma.profile.findUnique({
+			where: { userUsername: username },
+			select: { avatar: true }
+		});
+		if (!profile || !profile.avatar) {
+			return res.code(404).send({ message: 'Avatar not found.' });
+		}
+
+		// Detecta o tipo MIME dinamicamente
+		const type = await fileTypeFromBuffer(profile.avatar as Buffer);
+		res.header('Content-Type', type?.mime || 'application/octet-stream');
+		return res.send(profile.avatar as Buffer);
+	} catch (err) {
+		return res.code(500).send({ message: 'Error fetching avatar', error: err });
+	}
+}
+
+export const uploadAvatar = async (req: FastifyRequest, res: FastifyReply) => {
+	try {
+		const data = await req.file();
+		if (!data) return res.code(400).send({ message: 'No file uploaded' });
+
+		const { username } = req.params as { username: string };
+		const buffer = await data.toBuffer();
+
+		const updatedProfile = await prisma.profile.update({
+			where: { userUsername: username },
+			data: { avatar: buffer }
+		});
+		return res.code(200).send({ message: "Avatar updated successfully." });
+
+	} catch (err: unknown) {
+		if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
+			return res.code(404).send({ message: 'Profile not found' });
+		}
+		return res.code(500).send({ message: 'Error uploading avatar', error: err });
+	}
+}
 
 export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
@@ -14,8 +61,7 @@ export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 			gender,
 			firstName,
 			lastName,
-			language,
-			avatar
+			language
 		} = req.body as {
 			nickName?: string;
 			bio?: string;
@@ -23,13 +69,11 @@ export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 			firstName?: string;
 			lastName?: string;
 			language?: ProfileLanguage;
-			avatar?: string;
 		};
 
 		if (!username) {
 			return res.code(400).send({ message: 'username is required.' });
 		}
-
 
 		const user = await prisma.user.findUnique({
 			where: { username: username }
@@ -45,14 +89,13 @@ export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 
 		const profile = await prisma.profile.create({
 			data: {
-				userUsername : username,
+				userUsername: username,
 				...(nickName && { nickName }),
 				...(bio && { bio }),
 				...(gender && { gender }),
 				...(firstName && { firstName }),
 				...(lastName && { lastName }),
-				...(language && { language }),
-				...(avatar && { avatar })
+				...(language && { language })
 			},
 		});
 		return res.code(201).send(profile);
@@ -61,41 +104,40 @@ export const createProfile = async (req: FastifyRequest, res: FastifyReply) => {
 	}
 };
 
-
-exports.getProfileByUsername = async (req: FastifyRequest, res: FastifyReply) => {
+export const getProfileByUsername = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
 		const { username } = req.params as { username: string };
 
 		const profile = await prisma.profile.findUnique({
 			where: { userUsername: username },
-			// omit : {
-			// 	createdAt : true,
-			// 	updatedAt : true
-			// }
+			omit: {
+				avatar: true
+			}
 		});
 		if (!profile) return res.code(404).send({ message: 'Profile not found' });
-
 		return res.send(profile);
 	} catch (err) {
 		return res.code(500).send({ message: 'Error fetching profile', error: err });
 	}
 };
 
-exports.updateProfile = async (req: FastifyRequest, res: FastifyReply) => {
+export const updateProfile = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
 		const { username } = req.params as { username: string };
 		const data = req.body as Partial<Profile>;
 
-		// Remove undefined fields and exclude 'id' so it doesn't get updated
+		// Remove undefined fields, 'id' e 'avatar' para não atualizar esses campos
 		const updateData = Object.fromEntries(
-			Object.entries(data).filter(([key, v]) => v !== undefined && key !== 'id')
+			Object.entries(data).filter(
+				([key, v]) => v !== undefined && key !== 'id' && key !== 'avatar'
+			)
 		);
 
 		const profile = await prisma.profile.update({
 			where: { userUsername: username },
 			data: updateData
 		});
-		return res.send({ message: 'Profile updated', profile });
+		return res.send({ message: 'Profile updated' });
 	} catch (err: unknown) {
 		if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
 			return res.code(404).send({ message: 'Profile not found' });
@@ -104,13 +146,14 @@ exports.updateProfile = async (req: FastifyRequest, res: FastifyReply) => {
 	}
 };
 
-exports.deleteProfile = async (req: FastifyRequest, res: FastifyReply) => {
+export const deleteProfile = async (req: FastifyRequest, res: FastifyReply) => {
 	try {
 		const { username } = req.params as { username: string };
 
 		await prisma.profile.delete({
 			where: { userUsername: username }
 		});
+		return res.code(200).send({ message: "Profile successfully deleted." });
 	} catch (err: unknown) {
 		if (err instanceof PrismaClientKnownRequestError && err.code === 'P2025') {
 			return res.code(404).send({ message: 'Profile not found' });

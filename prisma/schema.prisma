@@ -2,14 +2,15 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
-    output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-    provider = "sqlite"
-    url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
+
 model User {
   id       String  @id @default(uuid())
   username String  @unique
@@ -31,10 +32,10 @@ model User {
 model Friendship {
   id String @id @default(uuid())
 
-  requester   User   @relation("SentRequests", fields: [requesterUsername], references: [username])
+  requester         User   @relation("SentRequests", fields: [requesterUsername], references: [username])
   requesterUsername String
 
-  addressee   User   @relation("ReceivedRequests", fields: [addresseeUsername], references: [username])
+  addressee         User   @relation("ReceivedRequests", fields: [addresseeUsername], references: [username])
   addresseeUsername String
 
   status    FriendshipStatus @default(PENDING)
@@ -49,7 +50,7 @@ model Friendship {
 model Profile {
   id        String           @id @default(uuid())
   status    UserStatus       @default(OFFLINE)
-  avatar    String?
+  avatar    Bytes?
   bio       String?
   gender    UserGender?
   nickName  String?          @unique
@@ -59,7 +60,7 @@ model Profile {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  user   User   @relation(fields: [userUsername], references: [username])
+  user         User   @relation(fields: [userUsername], references: [username])
   userUsername String @unique
 }
 

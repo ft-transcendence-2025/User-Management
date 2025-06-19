@@ -1,7 +1,12 @@
 import Fastify from "fastify";
+import fastifyMultipart from '@fastify/multipart';
+import authRoutes from "./routes/authRoutes";
+import userRoutes from "./routes/userRoutes";
+import friendshipRoutes from "./routes/friendshipRoutes";
+import profileRoutes from "./routes/profileRoutes";
 import { PrismaClient } from "../generated/prisma";
-const prisma = new PrismaClient();
 
+const prisma = new PrismaClient();
 
 const envToLogger = {
 	development: {
@@ -26,11 +31,8 @@ const fastify = Fastify({
 	logger: envToLogger[environment] ?? true
 })
 
+fastify.register(fastifyMultipart);
 
-import authRoutes from "./routes/authRoutes";
-import userRoutes from "./routes/userRoutes";
-import friendshipRoutes from "./routes/friendshipRoutes";
-import profileRoutes from "./routes/profileRoutes";
 
 [
 	{ route: authRoutes, prefix: '/auth' },
@@ -49,6 +51,7 @@ async function main() {
 		fastify.log.error("Could not initiate server...", err);
 	}
 }
+
 
 main();
 
