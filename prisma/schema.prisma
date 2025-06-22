@@ -30,8 +30,8 @@ model User {
 }
 
 model Friendship {
-  id String @id @default(uuid())
-
+  id                String @id @default(uuid())
+  role              Role?  @default(USER)
   requester         User   @relation("SentRequests", fields: [requesterUsername], references: [username])
   requesterUsername String
 
@@ -86,4 +86,9 @@ enum UserGender {
   MALE
   FEMALE
   OTHER
+}
+
+enum Role {
+  ADMIN
+  USER
 }

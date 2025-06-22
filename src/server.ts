@@ -1,9 +1,9 @@
 import Fastify from "fastify";
 import fastifyMultipart from '@fastify/multipart';
-import authRoutes from "./routes/authRoutes";
-import userRoutes from "./routes/userRoutes";
-import friendshipRoutes from "./routes/friendshipRoutes";
-import profileRoutes from "./routes/profileRoutes";
+import authRoutes from "./routes/auth.route";
+import userRoutes from "./routes/user.route";
+import friendshipRoutes from "./routes/friendship.route";
+import profileRoutes from "./routes/profile.route";
 import { PrismaClient } from "../generated/prisma";
 
 const prisma = new PrismaClient();

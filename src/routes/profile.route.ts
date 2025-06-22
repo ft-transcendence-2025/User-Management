@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import * as profileController  from '../controllers/profileController'
+import * as profileController  from '../controllers/profile.controller'
 
 export default async function profileRoutes(app: FastifyInstance) {
   app.post('/:username', profileController.createProfile);
