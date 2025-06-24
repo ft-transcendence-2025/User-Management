@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcrypt";
+import speakeasy from "speakeasy";
 import { PasswordValidator } from "password-validator-pro";
 
 export class UserServiceError extends Error {
@@ -78,4 +79,57 @@ export class UserService {
       omit: { password: true },
     });
   }
+
+  /* ####################################### 2FA ####################################### */
+
+  async generate2FASecret(username: string) {
+    const secret = speakeasy.generateSecret({
+      name: `TRANSCENDENCE (${username})`,
+    });
+    await prisma.user.update({
+      where: { username },
+      data: {
+        twoFactorSecret: secret.base32,
+        twoFactorEnabled: false,
+      },
+    });
+    return secret.otpauth_url;
+  }
+
+  async enable2FA(username: string, token: string) {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user || !user.twoFactorSecret)
+      throw new UserServiceError("2FA not initialized", 400);
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: "base32",
+      token,
+    });
+    if (!verified) throw new UserServiceError("Invalid 2FA token", 400);
+    await prisma.user.update({
+      where: { username },
+      data: { twoFactorEnabled: true },
+    });
+    return { message: "2FA enabled" };
+  }
+
+  async disable2FA(username: string) {
+    await prisma.user.update({
+      where: { username },
+      data: { twoFactorEnabled: false, twoFactorSecret: null },
+    });
+    return { message: "2FA disabled" };
+  }
+
+  async verify2FA(username: string, token: string) {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user?.twoFactorEnabled || !user.twoFactorSecret) return false;
+    return speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: "base32",
+      token,
+    });
+  }
+
+  /* ####################################### 2FA ####################################### */
 }
