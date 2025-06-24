@@ -1,6 +1,5 @@
-import { error } from "console";
 import prisma from "../lib/prisma";
-const bcrypt = require("bcrypt");
+import bcrypt from "bcrypt"
 
 /**
  * Validates a password string against a set of security rules.
