@@ -1,7 +1,10 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { FriendshipStatus } from "../../generated/prisma";
-import { PrismaClientKnownRequestError } from "../../generated/prisma/runtime/library";
-import prisma from "../lib/prisma";
+import {
+  FriendshipService,
+  FriendshipServiceError,
+} from "../services/friendshipt.service";
+
+const friendshipService = new FriendshipService();
 
 export const sendFriendRequest = async (
   req: FastifyRequest,
@@ -12,32 +15,15 @@ export const sendFriendRequest = async (
       fromUserId: string;
       toUserId: string;
     };
-
-    if (fromUserId === toUserId)
-      return res.code(400).send({ message: "You can't add yourself" });
-    const existing = await prisma.friendship.findFirst({
-      where: {
-        OR: [
-          { requesterUsername: fromUserId, addresseeUsername: toUserId },
-          { requesterUsername: toUserId, addresseeUsername: fromUserId },
-        ],
-      },
-    });
-    if (existing)
-      return res
-        .code(400)
-        .send({ message: "Friendship already exists or pending" });
-    console.info({ message: "requested : Create friendship", body: req.body });
-
-    await prisma.friendship.create({
-      data: {
-        requesterUsername: fromUserId,
-        addresseeUsername: toUserId,
-        // status: FriendshipStatus.PENDING
-      },
-    });
-    return res.code(201).send({ message: "Friend request sent" });
+    const result = await friendshipService.sendFriendRequest(
+      fromUserId,
+      toUserId
+    );
+    return res.code(201).send(result);
   } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
     return res.code(500).send({ message: "Internal server error", error: err });
   }
 };
@@ -48,19 +34,12 @@ export const getFriendRequests = async (
 ) => {
   try {
     const { username } = req.params as { username: string };
-
-    const requests = await prisma.friendship.findMany({
-      where: {
-        addresseeUsername: username,
-        status: "PENDING",
-      },
-      include: {
-        requester: { select: { id: true, username: true } },
-      },
-    });
-
+    const requests = await friendshipService.getFriendRequests(username);
     return res.send(requests);
   } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
     return res.code(500).send({ message: "Internal server error", error: err });
   }
 };
@@ -72,20 +51,14 @@ export const respondToFriendRequest = async (
   try {
     const { friendshipId } = req.params as { friendshipId: string };
     const { accept } = req.body as { accept: boolean };
-
-    const status = accept
-      ? FriendshipStatus.ACCEPTED
-      : FriendshipStatus.DECLINED;
-
-    await prisma.friendship.update({
-      where: { id: friendshipId },
-      data: { status },
-    });
-
-    return res.send({ message: `Friend request ${status.toLowerCase()}` });
+    const result = await friendshipService.respondToFriendRequest(
+      friendshipId,
+      accept
+    );
+    return res.send(result);
   } catch (err) {
-    if (err instanceof PrismaClientKnownRequestError && err.code === "P2025") {
-      return res.code(404).send({ message: "Friend request not found" });
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
     }
     return res.code(500).send({ message: "Internal server error", error: err });
   }
@@ -94,26 +67,12 @@ export const respondToFriendRequest = async (
 export const listFriends = async (req: FastifyRequest, res: FastifyReply) => {
   try {
     const { username } = req.params as { username: string };
-
-    const friends = await prisma.friendship.findMany({
-      where: {
-        OR: [{ requesterUsername: username }, { addresseeUsername: username }],
-        status: "ACCEPTED",
-      },
-      include: {
-        requester: { select: { id: true, username: true } },
-        addressee: { select: { id: true, username: true } },
-      },
-    });
-
-    const result = friends.map((f) => {
-      const friendUser =
-        f.requesterUsername == username ? f.addressee : f.requester;
-      return { id: friendUser.id, username: friendUser.username };
-    });
-
-    return res.send(result);
+    const friends = await friendshipService.listFriends(username);
+    return res.send(friends);
   } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
     return res.code(500).send({ message: "Internal server error", error: err });
   }
 };
@@ -124,19 +83,12 @@ export const removeFriend = async (req: FastifyRequest, res: FastifyReply) => {
       userId: string;
       friendId: string;
     };
-
-    await prisma.friendship.deleteMany({
-      where: {
-        OR: [
-          { requesterUsername: userId, addresseeUsername: friendId },
-          { requesterUsername: friendId, addresseeUsername: userId },
-        ],
-        status: "ACCEPTED",
-      },
-    });
-
-    return res.send({ message: "Friend removed" });
+    const result = await friendshipService.removeFriend(userId, friendId);
+    return res.send(result);
   } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
     return res.code(500).send({ message: "Internal server error", error: err });
   }
 };
