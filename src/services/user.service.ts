@@ -1,54 +1,45 @@
 import prisma from "../lib/prisma";
-import bcrypt from "bcrypt"
+import bcrypt from "bcrypt";
+import { PasswordValidator } from "password-validator-pro";
 
-/**
- * Validates a password string against a set of security rules.
- *
- * The password must satisfy all of the following rules:
- * - Must be at least 7 characters long.
- * - Must contain at least one uppercase letter (A-Z).
- * - Must contain at least one lowercase letter (a-z).
- * - Must contain at least one special character (non-alphanumeric).
- * - Must not contain two or more consecutive digits.
- * - Should not be empty or contain only whitespace.
- * - Should not contain the username or common dictionary words.
- *
- * @param pw - The password string to validate.
- * @returns `true` if the password meets all criteria, otherwise `false`.
- */
-function validatePassword(pw: string, username: string): boolean {
-  const rules = [
-    pw.length >= 7,
-    /[A-Z]/.test(pw),
-    /[a-z]/.test(pw),
-    /[^A-Za-z0-9]/.test(pw),
-    !/\d{2,}/.test(pw),
-    !(username && pw.toLowerCase().includes(username.toLowerCase())),
-    pw.trim().length > 0,
-  ];
-  return rules.every(Boolean);
-}
-
-class UserServiceError extends Error {
+export class UserServiceError extends Error {
   code: number;
-  constructor(message: string, code: number) {
+  error?: object;
+  constructor(message: string, code: number, error?: object) {
     super(message);
     this.code = code;
+    this.error = error;
     Object.setPrototypeOf(this, UserServiceError.prototype);
   }
 }
 
 export class UserService {
+  private pwValidator: PasswordValidator;
+
+  constructor() {
+    this.pwValidator = new PasswordValidator({
+      minLength: 8,
+      maxLength: 20,
+      requireUppercase: true,
+      requireLowercase: true,
+      requireNumbers: true,
+      requireSpecialChars: true,
+      combineErrors: true, // Set this to true to combine all errors into one message
+    });
+  }
   async createUser(username: string, password: string, email?: string) {
-    if (!validatePassword(password, username)) {
+    const result = this.pwValidator.validate(password);
+    if (!result.valid) {
       throw new UserServiceError(
         "Password does not meet security requirements.",
-        400
+        400,
+        result.errors
       );
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     return prisma.user.create({
       data: { username, password: hashedPassword, email },
+      omit: { password: true },
     });
   }
 

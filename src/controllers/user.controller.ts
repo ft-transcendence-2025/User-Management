@@ -1,7 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import prisma from "../lib/prisma";
 import { PrismaClientKnownRequestError } from "../../generated/prisma/runtime/library";
 import bcrypt from "bcrypt";
+import { UserService, UserServiceError } from "../services/user.service";
+
+const userService = new UserService();
 
 // ================================== POST ==================================
 export const createUser = async (req: FastifyRequest, res: FastifyReply) => {
@@ -14,18 +16,16 @@ export const createUser = async (req: FastifyRequest, res: FastifyReply) => {
   if (!username || !password) {
     return res
       .code(400)
-      .send({ message: "Username and password are required" });
+      .send({ message: "Username and password are required." });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
   try {
-    const user = await prisma.user.create({
-      data: { username, password: hashedPassword, email },
-    });
-
-    const { password: _, ...userSafe } = user;
-    return res.code(201).send({ message: "User created!", user: userSafe });
+    const user = await userService.createUser(username, password, email);
+    return res.code(201).send({ message: "User created!", user: user });
   } catch (err) {
+    if (err instanceof UserServiceError) {
+      return res.code(err.code).send({error : err?.error });
+    }
     return res.code(500).send({ message: "Error creating user", error: err });
   }
 };
@@ -37,17 +37,20 @@ export const login = async (req: FastifyRequest, res: FastifyReply) => {
       password: string;
     };
     if (!username || !password)
-      return res.code(400).send({ message: "Bad request." });
-    const user = await prisma.user.findFirst({ where: { username } });
+      return res.code(400).send({ message: "Username and password are required." });
+
+    const user = await userService.findUserByUsername(username);
     if (!user)
       return res.code(403).send({ message: "Invalid username or password." });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid)
       return res.code(403).send({ message: "Invalid username or password." });
+
+    const { password: _, ...userSafe } = user;
     return res
       .code(200)
-      .send({ message: "User successfully logged in.", user });
+      .send({ message: "User successfully logged in.", user: userSafe });
   } catch (err) {
     return res.code(500).send({ message: "Internal server error." });
   }
@@ -56,12 +59,8 @@ export const login = async (req: FastifyRequest, res: FastifyReply) => {
 // ================================== GET ==================================
 export const getAll = async (req: FastifyRequest, res: FastifyReply) => {
   try {
-    const users = await prisma.user.findMany({
-      omit: {
-        password: true,
-      },
-    });
-    return users
+    const users = await userService.getAllUsers();
+    return users && users.length > 0
       ? res.code(200).send(users)
       : res.code(404).send({ message: "No user was found!" });
   } catch (err) {
@@ -72,45 +71,32 @@ export const getAll = async (req: FastifyRequest, res: FastifyReply) => {
 export const getByUsername = async (req: FastifyRequest, res: FastifyReply) => {
   try {
     const { username } = req.params as { username: string };
-    const user = await prisma.user.findFirst({
-      where: {
-        username: username,
-      },
-      omit: {
-        password: true,
-      },
-    });
-
-    return user
-      ? res.code(200).send(user)
-      : res.code(404).send({ message: "User not found!" });
+    const user = await userService.findUserByUsername(username);
+    if (!user) {
+      return res.code(404).send({ message: "User not found!" });
+    }
+    const { password: _, ...userSafe } = user;
+    return res.code(200).send(userSafe);
   } catch (err) {
     return res.code(500).send({ message: "Internal Server Error", error: err });
   }
 };
 
 // ================================== PATCH ==================================
-
 export const disableUser = async (req: FastifyRequest, res: FastifyReply) => {
   try {
     const { username } = req.params as { username: string };
-
-    await prisma.user.update({
-      where: { username },
-      data: { active: false },
-    });
+    await userService.disableUser(username);
     return res.code(200).send({ message: "User disabled successfully" });
   } catch (err: unknown) {
     if (err instanceof PrismaClientKnownRequestError && err.code == "P2025") {
       return res.code(404).send({ message: "User not found!" });
     }
-
     return res.code(500).send({ message: "Internal Server Error", error: err });
   }
 };
 
 // ================================== PUT ==================================
-
 export const updateUser = async (req: FastifyRequest, res: FastifyReply) => {
   try {
     const { username } = req.params as { username: string };
@@ -123,10 +109,7 @@ export const updateUser = async (req: FastifyRequest, res: FastifyReply) => {
     if (email) data.email = email;
     if (password) data.password = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.update({
-      where: { username },
-      data,
-    });
+    const user = await userService.updateUser(username, data);
 
     return res.send({ message: "User updated", user });
   } catch (err: unknown) {
@@ -138,24 +121,15 @@ export const updateUser = async (req: FastifyRequest, res: FastifyReply) => {
 };
 
 // ================================== DELETE ==================================
-
 export const deleteUser = async (req: FastifyRequest, res: FastifyReply) => {
   try {
     const { username } = req.params as { username: string };
-    const user = await prisma.user.delete({
-      where: {
-        username: username,
-      },
-      omit: {
-        password: true,
-      },
-    });
+    const user = await userService.deleteUser(username);
     return res.code(200).send({ message: "User deleted successfully!", user });
   } catch (err: unknown) {
     if (err instanceof PrismaClientKnownRequestError && err.code == "P2025") {
       return res.code(404).send({ message: "User not found!" });
     }
-
     return res.code(500).send({ message: "Internal Server Error", error: err });
   }
 };
