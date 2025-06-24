@@ -1,17 +1,10 @@
 import { FastifyInstance } from "fastify";
-const userController = require('../controllers/userController');
+import * as userController from "../controllers/user.controller";
 
-export default async function userRoutes(fastify: FastifyInstance) {	
-	// GET
-	fastify.get('/', userController.getAll);
-	fastify.get('/:username', userController.getByUsername);
-	
-	// PUT
-	fastify.put('/:username', userController.updateUser);
-
-	// PATCH
-	fastify.patch('/:username', userController.disableUser);
-
-	// DELETE
-	fastify.delete('/:username', userController.deleteUser)
+export default async function userRoutes(fastify: FastifyInstance) {
+  fastify.get("/", userController.getAll);
+  fastify.get("/:username", userController.getByUsername);
+  fastify.put("/:username", userController.updateUser);
+  fastify.patch("/:username", userController.disableUser);
+  fastify.delete("/:username", userController.deleteUser);
 }

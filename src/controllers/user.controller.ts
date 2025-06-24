@@ -1,7 +1,7 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import prisma from "../server";
+import prisma from "../lib/prisma";
 import { PrismaClientKnownRequestError } from "../../generated/prisma/runtime/library";
-const bcrypt = require("bcrypt");
+import bcrypt from "bcrypt";
 
 // ================================== POST ==================================
 export const createUser = async (req: FastifyRequest, res: FastifyReply) => {

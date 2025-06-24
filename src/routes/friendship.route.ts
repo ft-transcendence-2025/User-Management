@@ -1,10 +1,13 @@
-import { FastifyInstance } from 'fastify';
-const friendshipController = require('../controllers/friendshipController')
+import { FastifyInstance } from "fastify";
+import * as friendshipController from "../controllers/friendship.controller";
 
 export default async function friendshipRoutes(app: FastifyInstance) {
-  app.post('/', friendshipController.sendFriendRequest); // enviar pedido
-  app.get('/requests/:username', friendshipController.getFriendRequests); // ver pedidos recebidos
-  app.patch('/respond/:friendshipId', friendshipController.respondToFriendRequest); // aceitar/rejeitar
-  app.get('/list/:username', friendshipController.listFriends); // listar amigos
-  app.delete('/', friendshipController.removeFriend); // remover amizade
+  app.post("/", friendshipController.sendFriendRequest);
+  app.get("/requests/:username", friendshipController.getFriendRequests);
+  app.patch(
+    "/respond/:friendshipId",
+    friendshipController.respondToFriendRequest
+  );
+  app.get("/list/:username", friendshipController.listFriends);
+  app.delete("/", friendshipController.removeFriend);
 }

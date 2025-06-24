@@ -1,5 +1,5 @@
 import { error } from "console";
-import prisma from "../server";
+import prisma from "../lib/prisma";
 const bcrypt = require("bcrypt");
 
 /**

@@ -1,58 +1,25 @@
-import Fastify from "fastify";
-import fastifyMultipart from '@fastify/multipart';
-import authRoutes from "./routes/auth.route";
-import userRoutes from "./routes/user.route";
-import friendshipRoutes from "./routes/friendship.route";
-import profileRoutes from "./routes/profile.route";
-import { PrismaClient } from "../generated/prisma";
+import "dotenv/config";
+import app from "./app";
+import prisma from "./lib/prisma";
 
-const prisma = new PrismaClient();
-
-const envToLogger = {
-	development: {
-		transport: {
-			target: 'pino-pretty',
-			options: {
-				translateTime: 'HH:MM:ss Z',
-				ignore: 'pid,hostname',
-			},
-		},
-	},
-	production: true,
-	test: false
-};
-
-type Environment = 'development' | 'production' | 'test';
-const environment = (process.env.NODE_ENV as Environment) || 'development';
-
-
-
-const fastify = Fastify({
-	logger: envToLogger[environment] ?? true
-})
-
-fastify.register(fastifyMultipart);
-
-
-[
-	{ route: authRoutes, prefix: '/auth' },
-	{ route: userRoutes, prefix: '/users' },
-	{ route: profileRoutes, prefix: '/profiles' },
-	{ route: friendshipRoutes, prefix: '/friendships' }
-].forEach(({ route, prefix }) => fastify.register(route, { prefix }));
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const HOST = process.env.HOST || "0.0.0.0";
 
 async function main() {
-	try {
-		fastify.listen({
-			port: 3000,
-			host: '0.0.0.0'
-		})
-	} catch (err) {
-		fastify.log.error("Could not initiate server...", err);
-	}
+  try {
+    await app.listen({ port: PORT, host: HOST });
+  } catch (err) {
+    app.log.error("Could not initiate server...", err);
+    process.exit(1);
+  }
 }
 
+process.on("SIGINT", async () => {
+  app.log.info("Received SIGINT. Initiating graceful shutdown...");
+  app.log.info("Server closed. Disconnecting from database...");
+  await app.close();
+  await prisma.$disconnect();
+  process.exit(0);
+});
 
 main();
-
-export default prisma;
