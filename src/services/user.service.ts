@@ -74,9 +74,33 @@ export class UserService {
   }
 
   async deleteUser(username: string) {
-    return prisma.user.delete({
-      where: { username },
-      omit: { password: true },
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { username },
+        select: { id: true, username: true },
+      });
+
+      if (!user) {
+        throw new UserServiceError("User not found", 404);
+      }
+
+      await tx.friendship.deleteMany({
+        where: {
+          OR: [
+            { requesterUsername: username },
+            { addresseeUsername: username },
+          ],
+        },
+      });
+
+      await tx.profile.deleteMany({
+        where: { userUsername: username },
+      });
+
+      return tx.user.delete({
+        where: { username },
+        omit: { password: true },
+      });
     });
   }
 
