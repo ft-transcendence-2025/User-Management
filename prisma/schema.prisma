@@ -17,6 +17,7 @@ model User {
   email    String?
   password String
   active   Boolean @default(true)
+  role     Role    @default(USER)
 
   twoFactorEnabled Boolean @default(false)
   twoFactorSecret  String?
@@ -31,7 +32,6 @@ model User {
 
 model Friendship {
   id                String @id @default(uuid())
-  role              Role?  @default(USER)
   requester         User   @relation("SentRequests", fields: [requesterUsername], references: [username])
   requesterUsername String
 

@@ -204,6 +204,7 @@ erDiagram
         string email
         string password
         boolean active
+        enum role
         boolean twoFactorEnabled
         string twoFactorSecret
         datetime createdAt
@@ -230,7 +231,6 @@ erDiagram
         string requesterUsername FK
         string addresseeUsername FK
         enum status
-        enum role
         datetime createdAt
         datetime updatedAt
     }
@@ -455,6 +455,7 @@ The database consists of three main entities:
 **User Entity**:
 - Primary identifier: UUID
 - Authentication: username/password + optional 2FA
+- Role-based permissions: ADMIN, USER
 - Audit fields: createdAt, updatedAt
 - Status: active flag for soft deletion
 
@@ -466,7 +467,7 @@ The database consists of three main entities:
 **Friendship Entity**:
 - Many-to-many relationship between Users
 - Status tracking: PENDING, ACCEPTED, BLOCKED, DECLINED
-- Role-based permissions (ADMIN, USER)
+- Bidirectional relationship management
 
 #### Relationships
 
