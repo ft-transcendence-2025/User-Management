@@ -4,8 +4,12 @@ import authRoutes from "./routes/auth.route";
 import userRoutes from "./routes/user.route";
 import friendshipRoutes from "./routes/friendship.route";
 import profileRoutes from "./routes/profile.route";
-import { performHealthCheck, checkReadiness, checkLiveness } from "./lib/health";
-
+import {
+  performHealthCheck,
+  checkReadiness,
+  checkLiveness,
+} from "./lib/health";
+import prometheus from "fastify-metrics";
 
 const envToLogger = {
   development: {
@@ -39,7 +43,7 @@ app.get("/health", async (req: FastifyRequest, res: FastifyReply) => {
       status: "error",
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : "Health check failed",
-      uptime: `${Math.floor(process.uptime())}s`
+      uptime: `${Math.floor(process.uptime())}s`,
     });
   }
 });
@@ -60,7 +64,9 @@ app.get("/live", async (req: FastifyRequest, res: FastifyReply) => {
   const liveness = checkLiveness();
   return res.code(200).send(liveness);
 });
+
 app.register(fastifyMultipart);
+app.register(prometheus);
 
 [
   { route: authRoutes, prefix: "/auth" },
