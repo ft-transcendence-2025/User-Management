@@ -8,7 +8,7 @@ const HOST = process.env.HOST || "0.0.0.0";
 async function main() {
   try {
     await app.listen({ port: PORT, host: HOST });
-  } catch (err) {
+  } catch (err : any) {
     app.log.error("Could not initiate server...", err);
     process.exit(1);
   }
