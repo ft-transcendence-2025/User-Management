@@ -3,6 +3,7 @@ import {
   FriendshipService,
   FriendshipServiceError,
 } from "../services/friendshipt.service";
+import { FriendshipStatus } from "../../generated/prisma";
 
 const friendshipService = new FriendshipService();
 
@@ -50,10 +51,10 @@ export const respondToFriendRequest = async (
 ) => {
   try {
     const { friendshipId } = req.params as { friendshipId: string };
-    const { accept } = req.body as { accept: boolean };
+    const { status } = req.body as { status: FriendshipStatus };
     const result = await friendshipService.respondToFriendRequest(
       friendshipId,
-      accept
+      status
     );
     return res.send(result);
   } catch (err) {
