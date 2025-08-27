@@ -45,6 +45,20 @@ export const getFriendRequests = async (
   }
 };
 
+export const getBlockedUsers = async (req: FastifyRequest, res: FastifyReply) => {
+  try {
+    const { username } = req.params as { username: string };
+    const blockedUsersList = await friendshipService.getBlockedUsersList(username);
+    return res.send(blockedUsersList);
+
+  } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
+    return res.code(500).send({ message: "Internal server error", error: err });
+  }
+}
+
 export const respondToFriendRequest = async (
   req: FastifyRequest,
   res: FastifyReply

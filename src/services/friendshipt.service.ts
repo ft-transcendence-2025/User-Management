@@ -54,6 +54,35 @@ export class FriendshipService {
     });
   }
 
+  async getBlockedUsersList(username: string) {
+    const usersList = await prisma.friendship.findMany({
+      where: {
+        OR: [
+          { addresseeUsername: username },
+          { requesterUsername: username }
+        ],
+        status: FriendshipStatus.BLOCKED,
+      },
+      // include: {
+      //   requester: { select: { username: true } },
+      // },
+      omit: {
+        id: true,
+        // requesterUsername: true,
+        // addresseeUsername: true,
+        createdAt: true,
+        updateAt: true,
+        status: true
+      }
+    });
+
+    return usersList.map((user) => {
+      return {
+        username: (username != user.requesterUsername) ? user.requesterUsername : user.addresseeUsername
+      };
+    })
+  }
+
   async respondToFriendRequest(friendshipId: string, status: FriendshipStatus) {
     try {
       await prisma.friendship.update({
