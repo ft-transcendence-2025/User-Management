@@ -83,7 +83,7 @@ export class FriendshipService {
     })
   }
 
-  async respondToFriendRequest(friendshipId: string, status: FriendshipStatus) {
+  async updateFriendshipStatus(friendshipId: string, status: FriendshipStatus) {
     try {
       await prisma.friendship.update({
         where: { id: friendshipId },

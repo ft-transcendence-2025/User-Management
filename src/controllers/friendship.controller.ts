@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import {
   FriendshipService,
   FriendshipServiceError,
-} from "../services/friendshipt.service";
+} from "../services/friendship.service";
 import { FriendshipStatus } from "../../generated/prisma";
 
 const friendshipService = new FriendshipService();
@@ -66,7 +66,7 @@ export const respondToFriendRequest = async (
   try {
     const { friendshipId } = req.params as { friendshipId: string };
     const { status } = req.body as { status: FriendshipStatus };
-    const result = await friendshipService.respondToFriendRequest(
+    const result = await friendshipService.updateFriendshipStatus(
       friendshipId,
       status
     );
