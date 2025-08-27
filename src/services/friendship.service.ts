@@ -63,23 +63,10 @@ export class FriendshipService {
         ],
         status: FriendshipStatus.BLOCKED,
       },
-      // include: {
-      //   requester: { select: { username: true } },
-      // },
-      omit: {
-        id: true,
-        // requesterUsername: true,
-        // addresseeUsername: true,
-        createdAt: true,
-        updateAt: true,
-        status: true
-      }
     });
 
     return usersList.map((user) => {
-      return {
-        username: (username != user.requesterUsername) ? user.requesterUsername : user.addresseeUsername
-      };
+      return (username != user.requesterUsername) ? user.requesterUsername : user.addresseeUsername;
     })
   }
 
