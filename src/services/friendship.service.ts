@@ -99,15 +99,15 @@ export class FriendshipService {
         status: FriendshipStatus.ACCEPTED,
       },
       include: {
-        requester: { select: { id: true, username: true } },
-        addressee: { select: { id: true, username: true } },
+        requester: { select: { id: true, username: true, profile : { select : {status : true}} } },
+        addressee: { select: { id: true, username: true, profile : { select : {status : true}} } },
       },
     });
 
     return friends.map((f) => {
       const friendUser =
         f.requesterUsername == username ? f.addressee : f.requester;
-      return { id: friendUser.id, username: friendUser.username };
+      return { id: friendUser.id, username: friendUser.username, status: friendUser.profile?.status };
     });
   }
 
