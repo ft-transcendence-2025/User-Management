@@ -5,6 +5,7 @@ export default async function friendshipRoutes(app: FastifyInstance) {
   app.post("/", friendshipController.sendFriendRequest);
   app.get("/requests/:username", friendshipController.getFriendRequests);
   app.get("/blockedUsersList/:username", friendshipController.getBlockedUsers);
+  app.patch("/block/:friendId", friendshipController.blockUser);
   app.patch(
     "/respond/:friendshipId",
     friendshipController.respondToFriendRequest

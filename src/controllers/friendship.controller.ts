@@ -107,3 +107,17 @@ export const removeFriend = async (req: FastifyRequest, res: FastifyReply) => {
     return res.code(500).send({ message: "Internal server error", error: err });
   }
 };
+
+export const blockUser = async (req: FastifyRequest, res: FastifyReply) => {
+  try {
+    const { friendId } = req.params as { friendId: string };
+    const { blockedBy } = req.body as { blockedBy: string };
+    const result = await friendshipService.blockUser(blockedBy, friendId);
+    return res.send(result);
+  } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
+    return res.code(500).send({ message: "Internal server error", error: err });
+  }
+};

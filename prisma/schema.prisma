@@ -27,6 +27,7 @@ model User {
 
   friendshipsSent     Friendship[] @relation("SentRequests")
   friendshipsReceived Friendship[] @relation("ReceivedRequests")
+  blockedFriendships  Friendship[] @relation("BlockRequests")
   profile             Profile?
 }
 
@@ -37,6 +38,9 @@ model Friendship {
 
   addressee         User   @relation("ReceivedRequests", fields: [addresseeUsername], references: [username])
   addresseeUsername String
+
+  blockedBy         User? @relation("BlockRequests", fields: [blockedByUsername], references: [username]) 
+  blockedByUsername String?
 
   status    FriendshipStatus @default(PENDING)
   createdAt DateTime         @default(now())

@@ -99,8 +99,8 @@ export class FriendshipService {
         status: FriendshipStatus.ACCEPTED,
       },
       include: {
-        requester: { select: { id: true, username: true, profile : { select : {status : true}} } },
-        addressee: { select: { id: true, username: true, profile : { select : {status : true}} } },
+        requester: { select: { id: true, username: true, profile: { select: { status: true } } } },
+        addressee: { select: { id: true, username: true, profile: { select: { status: true } } } },
       },
     });
 
@@ -122,5 +122,35 @@ export class FriendshipService {
       },
     });
     return { message: "Friend removed" };
+  }
+
+  async blockUser(blockedBy: string, blockedUser: string) {
+    const existingFriendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterUsername: blockedBy, addresseeUsername: blockedUser },
+          { requesterUsername: blockedUser, addresseeUsername: blockedBy },
+        ],
+      },
+    });
+
+    if (existingFriendship) {
+      await prisma.friendship.update({
+        where: { id: existingFriendship.id },
+        data: {
+          status: FriendshipStatus.BLOCKED,
+          blockedByUsername: blockedBy
+        },
+      });
+    } else {
+      await prisma.friendship.create({
+        data: {
+          requesterUsername: blockedBy,
+          addresseeUsername: blockedUser,
+          status: FriendshipStatus.BLOCKED,
+          blockedByUsername: blockedBy
+        },
+      });
+    }
   }
 }
