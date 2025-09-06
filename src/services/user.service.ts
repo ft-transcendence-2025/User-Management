@@ -2,6 +2,9 @@ import prisma from "../lib/prisma";
 import bcrypt from "bcrypt";
 import speakeasy from "speakeasy";
 import { PasswordValidator } from "password-validator-pro";
+import { ProfileService } from "./profile.service";
+
+const profileService = new ProfileService();
 
 export class UserServiceError extends Error {
   code: number;
@@ -38,10 +41,12 @@ export class UserService {
       );
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    return prisma.user.create({
+    const user = await prisma.user.create({
       data: { username, password: hashedPassword, email },
       omit: { password: true },
     });
+    const profile = await profileService.createProfile(username, {});
+    return user;
   }
 
   async findUserByUsername(username: string) {
