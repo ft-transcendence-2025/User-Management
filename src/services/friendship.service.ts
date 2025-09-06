@@ -20,18 +20,37 @@ export class FriendshipService {
     }
     const existing = await prisma.friendship.findFirst({
       where: {
-      OR: [
-        { requesterUsername: fromUserId, addresseeUsername: toUserId, status: { in: [FriendshipStatus.ACCEPTED, FriendshipStatus.PENDING] } },
-        { requesterUsername: toUserId, addresseeUsername: fromUserId, status: { in: [FriendshipStatus.ACCEPTED, FriendshipStatus.PENDING] } },
-      ],
+        OR: [
+          { requesterUsername: fromUserId, addresseeUsername: toUserId },
+          { requesterUsername: toUserId, addresseeUsername: fromUserId },
+        ],
       },
     });
+
     if (existing) {
-      throw new FriendshipServiceError(
-        "Friendship already exists or pending",
-        400
-      );
+      if (
+        existing.status === FriendshipStatus.ACCEPTED ||
+        existing.status === FriendshipStatus.PENDING
+      ) {
+        throw new FriendshipServiceError(
+          "Friendship already exists or pending",
+          400
+        );
+      } else {
+        // Update to pending if not already pending or accepted
+        await prisma.friendship.update({
+          where: { id: existing.id },
+          data: {
+            requesterUsername: fromUserId,
+            addresseeUsername: toUserId,
+            status: FriendshipStatus.PENDING,
+            blockedByUsername: null
+          },
+        });
+        return { message: "Friend request sent" };
+      }
     }
+
     await prisma.friendship.create({
       data: {
         requesterUsername: fromUserId,
