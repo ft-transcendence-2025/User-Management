@@ -153,4 +153,49 @@ export class FriendshipService {
       });
     }
   }
+
+  async unblockUser(unblockedBy: string, unblockedUser: string) {
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterUsername: unblockedBy, addresseeUsername: unblockedUser },
+          { requesterUsername: unblockedUser, addresseeUsername: unblockedBy },
+        ],
+        status: FriendshipStatus.BLOCKED,
+        blockedByUsername: unblockedBy,
+      },
+    });
+
+    if (!friendship) {
+      throw new FriendshipServiceError("No blocked relationship found", 404);
+    }
+
+    // If there was a friendship before blocking, set to DECLINED, else delete
+    await prisma.friendship.update({
+      where: { id: friendship.id },
+      data: {
+      status: FriendshipStatus.DECLINED,
+      blockedByUsername: null
+      },
+    });
+    return { message: "User unblocked" };
+  }
+
+
+  async getFriendshipStatus(blockedBy: string, blockedUser: string) {
+    console.log("Checking friendship status between", blockedBy, "and", blockedUser);
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterUsername: blockedBy, addresseeUsername: blockedUser },
+          { requesterUsername: blockedUser, addresseeUsername: blockedBy },
+        ],
+      },
+    });
+    console.log("Friendship record found:", friendship);
+    if (!friendship) {
+      return { status: FriendshipStatus.DECLINED, blockedBy: null };
+    }
+    return { status: friendship.status, blockedBy: friendship.blockedByUsername || null };
+  }
 }

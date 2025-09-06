@@ -121,3 +121,35 @@ export const blockUser = async (req: FastifyRequest, res: FastifyReply) => {
     return res.code(500).send({ message: "Internal server error", error: err });
   }
 };
+
+export const unblockUser = async (req: FastifyRequest, res: FastifyReply) => {
+  try {
+    const { friendId } = req.params as { friendId: string };
+    const { unblockedBy } = req.body as { unblockedBy: string };
+    const result = await friendshipService.unblockUser(unblockedBy, friendId);
+    return res.send(result);
+  } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
+    return res.code(500).send({ message: "Internal server error", error: err });
+  }
+};
+
+export const getFriendshipStatus = async (
+  req: FastifyRequest,
+  res: FastifyReply
+) => {
+  try {
+    const { requester, addressee } = req.params as { requester: string; addressee: string };
+    const userId1 = requester;
+    const userId2 = addressee;
+    const status = await friendshipService.getFriendshipStatus(userId1, userId2);
+    return res.send(status);
+  } catch (err) {
+    if (err instanceof FriendshipServiceError) {
+      return res.code(err.code).send({ message: err.message });
+    }
+    return res.code(500).send({ message: "Internal server error", error: err });
+  }
+};
