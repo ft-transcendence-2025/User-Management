@@ -20,10 +20,10 @@ export class FriendshipService {
     }
     const existing = await prisma.friendship.findFirst({
       where: {
-        OR: [
-          { requesterUsername: fromUserId, addresseeUsername: toUserId },
-          { requesterUsername: toUserId, addresseeUsername: fromUserId },
-        ],
+      OR: [
+        { requesterUsername: fromUserId, addresseeUsername: toUserId, status: { in: [FriendshipStatus.ACCEPTED, FriendshipStatus.PENDING] } },
+        { requesterUsername: toUserId, addresseeUsername: fromUserId, status: { in: [FriendshipStatus.ACCEPTED, FriendshipStatus.PENDING] } },
+      ],
       },
     });
     if (existing) {
