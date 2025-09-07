@@ -171,6 +171,7 @@ export class FriendshipService {
         },
       });
     }
+    return { message: "User blocked" };
   }
 
   async unblockUser(unblockedBy: string, unblockedUser: string) {
