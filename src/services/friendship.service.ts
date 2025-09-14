@@ -38,7 +38,7 @@ export class FriendshipService {
         );
       } else {
         // Update to pending if not already pending or accepted
-        await prisma.friendship.update({
+        const updated = await prisma.friendship.update({
           where: { id: existing.id },
           data: {
             requesterUsername: fromUserId,
@@ -47,18 +47,18 @@ export class FriendshipService {
             blockedByUsername: null
           },
         });
-        return { message: "Friend request sent" };
+        return { message: "Friend request sent", friendshipId: updated.id };
       }
     }
 
-    await prisma.friendship.create({
+    const created = await prisma.friendship.create({
       data: {
         requesterUsername: fromUserId,
         addresseeUsername: toUserId,
         status: FriendshipStatus.PENDING,
       },
     });
-    return { message: "Friend request sent" };
+    return { message: "Friend request sent", friendshipId: created.id };
   }
 
   async getFriendRequests(username: string) {
@@ -95,7 +95,7 @@ export class FriendshipService {
         where: { id: friendshipId },
         data: { status },
       });
-      return { message: `Friend request ${status.toLowerCase()}` };
+      return { message: `Friend request ${status.toLowerCase()}` , friendshipId: friendshipId };
     } catch (err: any) {
       if (
         err instanceof PrismaClientKnownRequestError &&
@@ -154,15 +154,16 @@ export class FriendshipService {
     });
 
     if (existingFriendship) {
-      await prisma.friendship.update({
+      const updated = await prisma.friendship.update({
         where: { id: existingFriendship.id },
         data: {
           status: FriendshipStatus.BLOCKED,
           blockedByUsername: blockedBy
         },
       });
+      return { message: "User blocked", friendshipId: updated.id };
     } else {
-      await prisma.friendship.create({
+      const created = await prisma.friendship.create({
         data: {
           requesterUsername: blockedBy,
           addresseeUsername: blockedUser,
@@ -170,8 +171,8 @@ export class FriendshipService {
           blockedByUsername: blockedBy
         },
       });
+      return { message: "User blocked", friendshipId: created.id };
     }
-    return { message: "User blocked" };
   }
 
   async unblockUser(unblockedBy: string, unblockedUser: string) {
@@ -191,14 +192,14 @@ export class FriendshipService {
     }
 
     // If there was a friendship before blocking, set to DECLINED, else delete
-    await prisma.friendship.update({
+    const updated = await prisma.friendship.update({
       where: { id: friendship.id },
       data: {
-      status: FriendshipStatus.DECLINED,
-      blockedByUsername: null
+        status: FriendshipStatus.DECLINED,
+        blockedByUsername: null
       },
     });
-    return { message: "User unblocked" };
+    return { message: "User unblocked", friendshipId: updated.id };
   }
 
 
