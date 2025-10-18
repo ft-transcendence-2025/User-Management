@@ -138,6 +138,11 @@ export class ProfileService {
         ([key, v]) => v !== undefined && key !== "id" && key !== "avatar"
       )
     );
+    
+    // Convert empty string to null for nickName to avoid unique constraint
+    if (updateData.nickName === "") {
+      updateData.nickName = null;
+    }
     try {
       const profile = await prisma.profile.update({
         where: { userUsername: username },
