@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import { PrismaClientKnownRequestError } from "../../generated/prisma/runtime/library";
 import { Profile, ProfileLanguage, UserGender } from "../../generated/prisma";
 import { fileTypeFromBuffer } from "file-type";
+import { ProfileValidator } from "../lib/profileValidator";
 
 export class ProfileServiceError extends Error {
   code: number;
@@ -76,6 +77,16 @@ export class ProfileService {
     if (!username) {
       throw new ProfileServiceError("username is required.", 400);
     }
+    
+    // Validate profile data
+    const validation = ProfileValidator.validate(data);
+    if (!validation.valid) {
+      throw new ProfileServiceError(
+        validation.errorMessage || "Profile data validation failed.",
+        400
+      );
+    }
+    
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user) {
       throw new ProfileServiceError("User does not exist.", 404);
@@ -112,6 +123,15 @@ export class ProfileService {
   }
 
   async updateProfile(username: string, data: Partial<Profile>) {
+    // Validate profile data
+    const validation = ProfileValidator.validate(data);
+    if (!validation.valid) {
+      throw new ProfileServiceError(
+        validation.errorMessage || "Profile data validation failed.",
+        400
+      );
+    }
+    
     // Remove undefined fields, 'id' and 'avatar'
     const updateData = Object.fromEntries(
       Object.entries(data).filter(
